@@ -84,8 +84,8 @@ static const char *const gMethodNames[] = {
 */
 static const bool gMethodUsesCLocale[] = {
 	false,
-	true,
-	true,
+	false,
+	false,
 	true,
 	true,
 	false,

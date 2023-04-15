@@ -54,6 +54,44 @@ enum Mode {
 	};	
 
 
+/*	gSample
+	Bytes sent as text data
+	These are the same characters listed in gSampleWide, but encoded as Code Page 434
+	
+	Putting the 'static' definitions in the header file so that both the C and C++ code
+	can see them; they will be duplicated in the object code.
+*/
+static const char gSample[] = { 0x41, 0xCE, 0xA3, 0xEB, 0x8C, 0x0A };
+
+
+/*	gSampleWide
+	Wide characters sent as text data (with UTF-16 interpretation)
+	
+	Not using u8'' here because that has Unicode semantics; we really want to force exactly
+	the specific value here
+*/
+static const wchar_t gSampleWide[] = {
+	0x0041,			// LATIN CAPITAL LETTER A
+	0x256C,			// BOX DRAWINGS DOUBLE VERTICAL AND HORIZONTAL
+	0x00FA,			// LATIN SMALL LETTER U WITH ACUTE
+	0x03B4,			// GREEK SMALL LETTER DELTA
+	0x00EE,			// LATIN SMALL LETTER I WITH CIRCUMFLEX
+	0x000A			// LINE FEED (LF)
+	};
+
+
+/*	SetPOSIXModeForStandardOutput
+	Retroactively apply a POSIX mode to the already-open standard output C stream
+*/
+extern bool SetPOSIXModeForStandardOutput(enum Mode);
+
+
+/*	OpenFileWithCMode
+	Open a C file stream applying the appropriate C file mode
+*/
+extern FILE *OpenFileWithCMode(enum Mode);
+
+
 /*	gFileName
 	Name of file used when not writing to standard output
 */

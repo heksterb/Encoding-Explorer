@@ -36,26 +36,6 @@
 #include "Encoding.h"
 
 
-/*	gSample
-	Bytes sent as text data
-	These are the same characters listed in gSampleWide, but encoded as Code Page 434
-*/
-static const char gSample[] = { 0x41, 0xce, 0xa3, 0xeb, 0x8c, '\n' };
-
-
-/*	gSampleWide
-	Wide characters sent as text data (with UTF-16 interpretation)
-*/
-static const wchar_t gSampleWide[] = {
-	0x0041,			// LATIN CAPITAL LETTER A
-	0x256C,			// BOX DRAWINGS DOUBLE VERTICAL AND HORIZONTAL
-	0x00FA,			// LATIN SMALL LETTER U WITH ACUTE
-	0x03B4,			// GREEK SMALL LETTER DELTA
-	0x00EE,			// LATIN SMALL LETTER I WITH CIRCUMFLEX
-	0x000A			// LINE FEED (LF)
-	};
-
-
 
 /*	TestWindowsAPI
 	Windows API test cases
@@ -129,15 +109,28 @@ return failed;
 
 
 /*	gPOSIXOpenModes
-	_open() ‘mode parameter corresponding to Mode
+	_open() ‘mode’ parameter corresponding to Mode
 */
-const static gPOSIXOpenModes[] = {
+static const int gPOSIXOpenModes[] = {
 	/* kNone */		0,
 	/* kBinary */		_O_BINARY,
 	/* kText */		_O_TEXT,
 	/* kWide */		_O_WTEXT,
 	/* kUnicode */		_O_U8TEXT,
 	/* kWideUnicode */	_O_U16TEXT
+	};
+
+
+/*	gCOpenModes
+	fopen() ‘mode’ parameter corresponding to Mode
+*/
+static const char *const gCOpenModes[] = {
+	/* kNone */		"0",
+	/* kBinary */		"wb",
+	/* kText */		"w",
+	/* kWide */		"w,ccs=unicode",
+	/* kUnicode */		"w,ccs=utf-8",
+	/* kUnicodeWide */	"w,ccs=utf-16le"
 	};
 
 
@@ -236,6 +229,34 @@ return false;
 }
 
 
+/*	SetPOSIXModeForStandardOutput
+	Retroactively apply a POSIX mode to the already-open standard output C stream
+*/
+bool SetPOSIXModeForStandardOutput(
+	enum Mode	mode
+	)
+{
+// retroactively apply the 'open()' mode
+if (_setmode(_fileno(stdout), gPOSIXOpenModes[mode]) == -1) {
+	fprintf(stderr, "error: can't apply mode to standard output\n");
+	return true;
+	}
+
+return false;
+}
+
+
+/*	OpenFileWithCMode
+	Open a C file stream applying the appropriate C file mode
+*/
+FILE *OpenFileWithCMode(
+	enum Mode	mode
+	)
+{
+return fopen(gFileName, gCOpenModes[mode]);
+}
+
+
 /*	TestC
 	Standard C I/O test cases
 */
@@ -250,26 +271,12 @@ FILE *file;
 if (standardOutput) {
 	file = stdout;
 	
-	// retroactively apply the 'open()' mode
-	if (_setmode(_fileno(file), gPOSIXOpenModes[mode]) == -1) {
-		fprintf(stderr, "error: can't apply mode to standard output\n");
-		return true;
-		}
+	SetPOSIXModeForStandardOutput(mode);
 	}
 
 else {
-	// 'binary unicode' appears to be just 'binary'
-	const static char *const modes[] = {
-		/* kNone */		"0",
-		/* kBinary */		"wb",
-		/* kText */		"w",
-		/* kWide */		"w,ccs=unicode",
-		/* kUnicode */		"w,ccs=utf-8",
-		/* kUnicodeWide */	"w,ccs=utf-16le"
-		};
-	
 	// open
-	file = fopen(gFileName, modes[mode]);
+	file = OpenFileWithCMode(mode);
 	if (!file) return true;
 	
 	/* Thought about applying fwide() here, even though it isn't really necessary; however, it's unimplemented. */
